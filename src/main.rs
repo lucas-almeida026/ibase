@@ -77,12 +77,27 @@ fn appen_export_line (index_file_path: &Path, line: &String, line_core: Option<&
 fn main() {
   //FIXME: last folder is not considered as a base folder
   let args = env::args();
+  let usage_msg = "Usage <target> <base> [--name <name>]";
   if args.len() > 2 {
     let argsi: Vec<String> = args.collect();
-    let target = &argsi[1];
-    let base = &argsi[2];
-    let target_path = Path::new(target);
-    let base_path = Path::new(base);
+    let target = &argsi.get(1);
+    let base = &argsi.get(2);
+    let __name = &argsi.get(3);
+    let __name_val = &argsi.get(4);
+
+    if target.is_none() {
+      println!("{}", &usage_msg);
+      return
+    }
+
+    if base.is_none() {
+      println!("{}", usage_msg);
+      return
+    }
+
+    let target_path = Path::new(target.unwrap());
+    let base_path = Path::new(base.unwrap());
+    let has_name_opt = __name.is_some();
     if !base_path.is_dir() {
       println!("Invalid argument <base>; Expecting a folder path");
       return;
@@ -90,6 +105,11 @@ fn main() {
     if !target_path.is_file() {
       println!("Invalid argument <target>; Expecting a file path");
       return;
+    }
+
+    if has_name_opt && __name_val.is_none() {
+      println!("Invalid option --name <name> is required");
+      return
     }
 
     let target_path_splited = split_path(target_path);
@@ -123,8 +143,9 @@ fn main() {
       let [target_path, export_path] = &backtrack_paths[i];
       let last = i == backtrack_paths.len() - 1;
       let formated_export_path = format!("\"./{}\"", export_path);
+      let import_name = if has_name_opt { __name_val.unwrap() } else { filename };
       let export_line = if last {
-        format!("export {{default as {}}} from {}", filename, formated_export_path)
+        format!("export {{default as {}}} from {}", import_name, formated_export_path)
       } else {
         format!("export * from {}", formated_export_path)
       };
@@ -134,6 +155,6 @@ fn main() {
       appen_export_line(Path::new(maybe_index), &export_line, line_core);
     }
   } else {
-    println!("Usage: ibase <target> <base>")
+    println!("{}", &usage_msg)
   }
 }
